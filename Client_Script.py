@@ -43,7 +43,7 @@ def connect(frame):
 def writeServo(frame):
 	val = frame.ang_S.get()
 	frame.slider.set(int(val))
-	cli.sendData("S" + val)
+	cli.sendData("$" + val)
 	return
 
 def authLogin(frame,root):

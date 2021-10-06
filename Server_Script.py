@@ -8,13 +8,11 @@ from SendMail import *
 from random import randint
 import threading,json
 
-#--------------------------------------Tkinter------------------------------------------------
+#--------------------------------------Encrypted Key------------------------------------------------
 
 private = rsa.key.PrivateKey(72197395526160633030554118496234289569625855085660915915118801205090674214579, 65537, 70026086699359549555521355819333030910193842644411380649853020745670061704641, 63263233427758951304101718942519092713347, 1141222027618991512670775157258845457)
 
-
 #--------------------------------------Socket------------------------------------------------
-
 
 def loginAuth(ser):
 	ser.sendData("Ok")
@@ -52,41 +50,44 @@ def signupAuth(ser):
 		json.dump(data, f, indent=2)
 	ser.sendData("Ok")
 	
-class Ardino:
+class HardWare:
 
-	def __init__(self):
-		pass
-
-	def connectArd(self):
-		try:
-			self.board.exit()
-		except:
-			pass
-		self.board = Arduino('COM4')
-		self.lcd(" ")
-		self.ser = self.board.get_pin('d:6:s')
+	def __init__(self,port):
+		self.port = port;
+		self.soc = socket.socket()
+		self.name = socket.gethostname()
+		self.ip = socket.gethostbyname(self.name)
+		self.soc.bind(('',self.port))
 		return
 
-	def lcd(self,text):
-	    if text:
-	        self.board.send_sysex( STRING_DATA, util.str_to_two_byte_iter( text ))
-	    return
-
-	def servo(self,val):
-		self.ser.write(int(val))
-		self.lcd(str(val))
+	def acceptHardware(self):
+		self.soc.listen(1)
+		self.client, self.addr = self.soc.accept()
+		if self.recvData() == "Connected":
+			pass
+		else:
+			print("Error in hardware Connection")
 		return
 
-	def disconnectArd(self):
+	def sendData(self,msg):
+		self.client.send(bytes(msg,'utf-8'))
+		return
+	
+	def recvData(self):
+		msg = self.client.recv(1024).decode()
+		return msg	
+
+	def closeHardWare(self):
 		try:
-			self.ser.write(0)
-			self.lcd('0')
-			self.lcd("S")
-			sleep(2)
-			self.board.exit()
-			return
+			hardware.sendData("DisConnectArduino")
+			self.client.close()
 		except:
 			pass
+		try:
+			self.soc.close()
+		except:
+			pass
+	
 
 class Socket:
 
@@ -107,17 +108,17 @@ class Socket:
 			try:
 				msg = self.client.recv(1024).decode()
 				if msg == "ConnectArduino":
-					ard.connectArd()
+					hardware.sendData("ConnectArduino")
 				elif msg == "DisConnectArduino":
-					ard.disconnectArd()
+					hardware.sendData("DisConnectArduino")
 				elif msg == "Back":
-					ard.disconnectArd()
+					hardware.sendData("DisConnectArduino")
 				elif msg == "Login":
 					loginAuth(self)
 				elif msg == "Signup":
 					signupAuth(self)
-				elif msg[0] == 'S':
-					ard.servo(int(msg[1:]))
+				elif msg[0] == '$':
+					hardware.sendData(msg)
 				elif msg == "OTP":
 					sendOTP(self)
 				elif msg == "Exit":
@@ -169,7 +170,7 @@ def startCon():
 
 #--------------------------------------------------------------------------------------
 
-ard = Ardino()
+hardware = HardWare(5050)
 port= 5000
 
 try:
@@ -178,6 +179,6 @@ try:
 except:
 	pass
 
-Email = Mail( os.environ.get('REMOTE_MAIL') , os.environ.get('REMOTE_PASSWORD'))
+Email = Mail(os.environ.get('REMOTE_MAIL') , os.environ.get('REMOTE_PASSWORD'))
 
 #------------------------------------------END-------------------------------------------
