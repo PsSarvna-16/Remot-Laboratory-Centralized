@@ -1,0 +1,26 @@
+{
+  "18D047": {
+    "name": "kathir",
+    "id": "18D047",
+    "pwd": "$2b$12$kpPINbRWpXHyYPMng0y2beDa4QGgYL/7rczE2Wi4b8HogSesftugq",
+    "email": "kathiraadhi@student.tce.edu"
+  },
+  "18D085": {
+    "name": "Rakesh",
+    "id": "18D085",
+    "pwd": "$2b$12$5M9ydzyNmmbGSP2dw603qO7EMxpnZCIsjP8XMOM6JjfDDHR7icFfa",
+    "email": "rakeshc@student.tce.edu"
+  },
+  "18D010": {
+    "name": "aravinth",
+    "id": "18D010",
+    "pwd": "$2b$12$aWpTc6pLPn4DWnLuAw6iY.34PV3Ztz7JleLwSlIhK8guGwTiWSqVu",
+    "email": "aravintha@student.tce.edu"
+  },
+  "18D132": {
+    "name": "Saravana",
+    "id": "18D132",
+    "pwd": "$2b$12$fgq9/osWjvxt0PGsfpgbv.c1Y73vJpXgv/SUVN7ri.PGVMHy8edUe",
+    "email": "ssaravanakumar@student.tce.edu"
+  }
+}
