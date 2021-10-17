@@ -36,7 +36,12 @@ def sendOTP(ser):
 	subj = f"Remote Login OTP [{otp}]"
 	body = "Hi " + name + ",\n\n\tYour One Time Password for Remote Login Laboratory is " + str(otp) +"."
 	ser.sendData(ser.hcon,"%" + mail+ "%" +"Remote Laboratory"+ "%" +subj+ "%" +body)
-	
+	if ser.recvData(ser.hcon) == "OTP-Sent":
+		ser.sendData(ser.ccon, str(otp))
+	else:
+		ser.sendData(ser.ccon, "Not-Sent")
+	return
+
 def signupAuth(ser):
 	global name,mail
 	reg = ser.recvData(ser.ccon)
@@ -63,6 +68,7 @@ class SerSocket:
 		self.hsoc.listen(1)
 
 		print("Hardware Socket Created")
+		print("Waiting for Hardware Connection")
 		self.hcon, self.haddr = self.hsoc.accept()
 		msg = self.recvData(self.hcon)
 		if msg == "Connected":
@@ -71,6 +77,13 @@ class SerSocket:
 		else:
 			print(msg)
 			print("Hardware Connection Failed")
+			print("reconnecting Hardware")
+			try:
+				self.hcon.close()
+			except:
+				pass
+			self.hsoc.close()
+			self.startCon()
 
 		self.csoc = socket.socket()
 		self.cname = socket.gethostname()
@@ -81,25 +94,39 @@ class SerSocket:
 		
 	def acceptClients(self):
 		self.csoc.listen(3)
+		print("Waiting for Client Connection")
 		self.ccon, self.addr = self.csoc.accept()
 		self.recvData(self.ccon)
 		while self.ccon:
 			try:
 				msg = self.recvData(self.ccon)
+
 				if msg == "ConnectArduino":
 					self.sendData(self.hcon, "ConnectArduino")
-				elif msg == "DisConnectArduino":
+					if self.recvData(self.hcon) == "Arduino-Connected":
+						print("Arduino-Connected")
+					else:
+						print("Arduino-Connection Failed")
+
+				elif msg == "DisConnectArduino" or msg == "Back":
 					self.sendData(self.hcon,"DisConnectArduino")
-				elif msg == "Back":
-					self.sendData(self.hcon,"DisConnectArduino")
+					if self.recvData(self.hcon) == "Arduino-DisConnected":
+						print("Arduino-DisConnected")
+					else:
+						print("Arduino-DisConnection Failed")
+						
 				elif msg == "Login":
 					loginAuth(self)
+
 				elif msg == "Signup":
 					signupAuth(self)
+
 				elif msg[0] == '$':
 					self.sendData(self.hcon,msg)
+
 				elif msg == "OTP":
 					sendOTP(self)
+
 				elif msg == "Exit":
 					self.sendData(self.hcon, "Exit")
 					self.closeCon()
