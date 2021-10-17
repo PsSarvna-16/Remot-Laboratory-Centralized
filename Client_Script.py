@@ -123,13 +123,13 @@ def getOTP(frame):
 
 def createAccount(frame):
 	global cli,otp
-	cli.sendData("Signup")
-	salt = bcrypt.gensalt()
-	reg = frame.reg_S.get().strip()
-	pwd = bytes(frame.pwd_S.get().strip(),'utf-8')
-	pwd = bcrypt.hashpw(pwd,salt)
 	userotp = frame.otp_S.get()
-	if userotp == frame.otp_S.get():
+	if otp == str(userotp):
+		cli.sendData("Signup")
+		salt = bcrypt.gensalt()
+		reg = frame.reg_S.get().strip()
+		pwd = bytes(frame.pwd_S.get().strip(),'utf-8')
+		pwd = bcrypt.hashpw(pwd,salt)
 		cli.sendData(reg)
 		cli.sendByte(pwd)
 		if cli.recvData() == "Ok":
@@ -462,7 +462,7 @@ window.bringLogin(root)
 root.protocol('WM_DELETE_WINDOW',closeSer)
 otp =""
 try:
-	cli = Socket('192.168.43.179',5000)
+	cli = Socket('45.79.126.16',5100)
 	cli.connectServer()
 except Exception as e:
 	messagebox.showerror(f"Warning", e)

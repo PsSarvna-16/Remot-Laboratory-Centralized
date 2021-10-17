@@ -1,4 +1,5 @@
 import smtplib
+import os
 from email.message import EmailMessage
 
 class Mail:
@@ -10,6 +11,7 @@ class Mail:
 		self.EMAIL_PWD = pwd
 
 	def sendMail(self,mail,name,subj,body):
+		print(body)
 		msg = EmailMessage()
 		msg['Subject'] = subj
 		msg['From'] = name
@@ -20,10 +22,10 @@ class Mail:
 				smtp.starttls()
 				smtp.login(self.EMAIL_ADDR,self.EMAIL_PWD)
 				smtp.send_message(msg)
+				print("sent mail")
 				return 1
 		except Exception as e:
-			return e
-
+			print(e)
 
 
 """

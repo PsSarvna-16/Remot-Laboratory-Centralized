@@ -4,7 +4,6 @@ import bcrypt
 import rsa, os
 from time import sleep
 from pyfirmata import Arduino,util,STRING_DATA
-from SendMail import *
 from random import randint
 import threading,json
 
@@ -15,170 +14,128 @@ private = rsa.key.PrivateKey(721973955261606330305541184962342895696258550856609
 #--------------------------------------Socket------------------------------------------------
 
 def loginAuth(ser):
-	ser.sendData("Ok")
-	reg = ser.recvData()
-	ser.sendData("Ok")
-	pwd =bytes(rsa.decrypt(ser.recvByte(), private).decode(),'utf-8')
+	ser.sendData(ser.ccon,"Ok")
+	reg = ser.recvData(ser.ccon)
+	ser.sendData(ser.ccon,"Ok")
+	pwd =bytes(rsa.decrypt(ser.recvByte(ser.ccon), private).decode(),'utf-8')
 	with open("cred.json", 'r') as f:
 		data = json.load(f)
 	if reg in data:
 		if bcrypt.checkpw(pwd,bytes(data[reg]['pwd'],'utf-8')):
-			ser.sendData("Ok")
+			ser.sendData(ser.ccon,"Ok")
 			return
-	ser.sendData("Not")
+	ser.sendData(ser.ccon,"Not")
 
 def sendOTP(ser):
-	global Email,name,mail
-	ser.sendData("Ok")
-	msg = ser.recvData()
+	global name,mail
+	ser.sendData(ser.ccon,"Ok")
+	msg = ser.recvData(ser.ccon)
 	name,mail = msg.split("%") 
 	otp = randint(100000,999999)
+	print(otp)
 	subj = f"Remote Login OTP [{otp}]"
 	body = "Hi " + name + ",\n\n\tYour One Time Password for Remote Login Laboratory is " + str(otp) +"."
-	Email.sendMail(mail,"Remote Laboratory",subj,body)
-	ser.sendData(str(otp))
+	ser.sendData(ser.hcon,"%" + mail+ "%" +"Remote Laboratory"+ "%" +subj+ "%" +body)
 	
 def signupAuth(ser):
 	global name,mail
-	reg = ser.recvData()
-	pwd = ser.recvData()
+	reg = ser.recvData(ser.ccon)
+	pwd = ser.recvData(ser.ccon)
 	with open("cred.json", 'r') as f:
 		data = json.load(f)
 	ndata =  { 'name' : name,'id' : reg ,'pwd' : pwd ,'email':mail}
 	data[reg] = ndata
 	with open("cred.json", 'w') as f:
 		json.dump(data, f, indent=2)
-	ser.sendData("Ok")
-	
-class HardWare:
+	ser.sendData(ser.ccon,"Ok")
 
-	def __init__(self,port):
-		self.port = port;
-		self.soc = socket.socket()
-		self.name = socket.gethostname()
-		self.ip = socket.gethostbyname(self.name)
-		self.soc.bind(('',self.port))
-		return
+class SerSocket:
 
-	def acceptHardware(self):
-		self.soc.listen(1)
-		self.client, self.addr = self.soc.accept()
-		if self.recvData() == "Connected":
-			pass
-		else:
-			print("Error in hardware Connection")
-		return
-
-	def sendData(self,msg):
-		self.client.send(bytes(msg,'utf-8'))
-		return
-	
-	def recvData(self):
-		msg = self.client.recv(1024).decode()
-		return msg	
-
-	def closeHardWare(self):
-		try:
-			hardware.sendData("DisConnectArduino")
-			self.client.close()
-		except:
-			pass
-		try:
-			self.soc.close()
-		except:
-			pass
-	
-
-class Socket:
-
-	def __init__(self,port):
-		self.port = port
+	def __init__(self,hport,cport):
+		self.hport = hport
+		self.cport = cport
 		
 	def startCon(self):
-		self.soc = socket.socket()
-		self.name = socket.gethostname()
-		self.ip = socket.gethostbyname(self.name)
-		self.soc.bind(('',self.port))
+		self.hsoc = socket.socket()
+		self.hname = socket.gethostname()
+		self.hip = socket.gethostbyname(self.hname)
+		self.hsoc.bind(('',self.hport))
+		self.hsoc.listen(1)
+
+		print("Hardware Socket Created")
+		self.hcon, self.haddr = self.hsoc.accept()
+		msg = self.recvData(self.hcon)
+		if msg == "Connected":
+			print(msg)
+			print("Connected to HardWare")
+		else:
+			print(msg)
+			print("Hardware Connection Failed")
+
+		self.csoc = socket.socket()
+		self.cname = socket.gethostname()
+		self.cip = socket.gethostbyname(self.cname)
+		self.csoc.bind(('',self.cport))
+		print("Client Socket Created")
+		return
 		
 	def acceptClients(self):
-		self.soc.listen(3)
-		self.client, self.addr = self.soc.accept()
-		self.recvData()
-		while self.client:
+		self.csoc.listen(3)
+		self.ccon, self.addr = self.csoc.accept()
+		self.recvData(self.ccon)
+		while self.ccon:
 			try:
-				msg = self.client.recv(1024).decode()
+				msg = self.recvData(self.ccon)
 				if msg == "ConnectArduino":
-					hardware.sendData("ConnectArduino")
+					self.sendData(self.hcon, "ConnectArduino")
 				elif msg == "DisConnectArduino":
-					hardware.sendData("DisConnectArduino")
+					self.sendData(self.hcon,"DisConnectArduino")
 				elif msg == "Back":
-					hardware.sendData("DisConnectArduino")
+					self.sendData(self.hcon,"DisConnectArduino")
 				elif msg == "Login":
 					loginAuth(self)
 				elif msg == "Signup":
 					signupAuth(self)
 				elif msg[0] == '$':
-					hardware.sendData(msg)
+					self.sendData(self.hcon,msg)
 				elif msg == "OTP":
 					sendOTP(self)
 				elif msg == "Exit":
+					self.sendData(self.hcon, "Exit")
 					self.closeCon()
 					break
 				else:
 					pass
 			except Exception as e:
-				pass
+				print(e)
 
-	def sendData(self,msg):
-		self.client.send(bytes(msg,'utf-8'))
+	def sendData(self,con,msg):
+		con.sendall(bytes(msg,'utf-8'))
+		print("sent : " + msg)
 		return
 	
-	def recvData(self):
-		msg = self.client.recv(1024).decode()
-		return msg	
+	def recvData(self,con):
+		msg = con.recv(1024).decode()
+		print("rec : " + msg)
+		return msg
 
-	def recvByte(self):
-		msg = self.client.recv(1024)
+	def recvByte(self,con):
+		msg = con.recv(1024)
 		return msg
 
 	def closeCon(self):
-		try:
-			ard.disconnect()
-		except:
-			pass
-		try:
-			self.client.close()
-		except:
-			pass
-		try:
-			self.soc.close()
-		except:
-			pass
-		
-
-def startCon():
-	global ser
-	try:
-		ser.closeCon()
-	except:
-		pass
-
-	ser = Socket(port)
-	ser.startCon()
-	thread = threading.Thread(target = ser.acceptClients )
-	thread.start()
+		self.hcon.close()
+		self.ccon.close()
+		self.hsoc.close()
+		self.csoc.close()
+		print("Socket closed")
 
 #--------------------------------------------------------------------------------------
 
-hardware = HardWare(5050)
-port= 5000
-
-try:
-	ser = Socket(port)
-	startCon()
-except:
-	pass
-
-Email = Mail(os.environ.get('REMOTE_MAIL') , os.environ.get('REMOTE_PASSWORD'))
+ser = SerSocket(5050,5100)
+ser.startCon()
+thread = threading.Thread(target = ser.acceptClients )
+thread.start()
 
 #------------------------------------------END-------------------------------------------
+
