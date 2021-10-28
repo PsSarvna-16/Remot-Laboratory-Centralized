@@ -3,7 +3,7 @@
 import socket
 import pickle
 import bcrypt
-import rsa,os
+import rsa,os,sys
 import pickle
 from time import sleep
 from tkinter import *
@@ -78,10 +78,11 @@ def closeSer():
 			cli.sendData("Exit")
 			sleep(1)
 			cli.con.close()
-			root.destroy()
-			exit()
+			sleep(2)
+			sys.exit()
 		except:
-			exit()
+			sleep(2)
+			sys.exit()
 
 def onlyDigit(dig):
 	if re.search("[0-9]$",dig) and len(str(dig)) <= 6:

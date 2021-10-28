@@ -61,6 +61,16 @@ class SerSocket:
 		self.cport = cport
 		
 	def startCon(self):
+
+		try:
+			self.hsoc.close()
+		except:
+			pass
+		try:
+			self.csoc.close()
+		except:
+			pass
+
 		self.hsoc = socket.socket()
 		self.hname = socket.gethostname()
 		self.hip = socket.gethostbyname(self.hname)
@@ -89,14 +99,20 @@ class SerSocket:
 		self.cname = socket.gethostname()
 		self.cip = socket.gethostbyname(self.cname)
 		self.csoc.bind(('',self.cport))
+		self.csoc.listen(3)
 		print("Client Socket Created")
 		return
 		
 	def acceptClients(self):
-		self.csoc.listen(3)
+
+		if(not(self.hcon)):
+			self.startCon
+
 		print("Waiting for Client Connection")
 		self.ccon, self.addr = self.csoc.accept()
 		self.recvData(self.ccon)
+		thread = threading.Thread(target = ser.acceptClients )
+		thread.start()
 		while self.ccon:
 			try:
 				msg = self.recvData(self.ccon)
@@ -128,7 +144,7 @@ class SerSocket:
 					sendOTP(self)
 
 				elif msg == "Exit":
-					self.sendData(self.hcon, "Exit")
+					self.sendData(self.hcon, "Reset")
 					self.closeCon()
 					break
 				else:
@@ -151,10 +167,7 @@ class SerSocket:
 		return msg
 
 	def closeCon(self):
-		self.hcon.close()
 		self.ccon.close()
-		self.hsoc.close()
-		self.csoc.close()
 		print("Socket closed")
 
 #--------------------------------------------------------------------------------------
@@ -165,4 +178,3 @@ thread = threading.Thread(target = ser.acceptClients )
 thread.start()
 
 #------------------------------------------END-------------------------------------------
-
