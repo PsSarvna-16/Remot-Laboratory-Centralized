@@ -3,6 +3,7 @@ import os
 from email.message import EmailMessage
 
 class Mail:
+	
 	EMAIL_ADDR = ""
 	EMAIL_PWD = ""
 
@@ -26,13 +27,3 @@ class Mail:
 				return 1
 		except Exception as e:
 			print(e)
-
-
-"""
-from SendMail import *
-
-gmail = Mail("pssaravna.kumar@gmail.com","Pss@160499")
-
-gmail.sendMail("sarvna.ps@gmail.com","Python","Generated Mail")
-
-"""

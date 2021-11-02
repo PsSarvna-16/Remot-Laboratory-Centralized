@@ -60,14 +60,10 @@ class SerSocket:
 		self.hport = hport
 		self.cport = cport
 		
-	def startCon(self):
+	def startHardCon(self):
 
 		try:
 			self.hsoc.close()
-		except:
-			pass
-		try:
-			self.csoc.close()
 		except:
 			pass
 
@@ -93,7 +89,13 @@ class SerSocket:
 			except:
 				pass
 			self.hsoc.close()
-			self.startCon()
+			self.startHardCon()
+
+	def startCliCon(self):
+		try:
+			self.csoc.close()
+		except:
+			pass
 
 		self.csoc = socket.socket()
 		self.cname = socket.gethostname()
@@ -105,15 +107,19 @@ class SerSocket:
 		
 	def acceptClients(self):
 
-		if(not(self.hcon)):
-			self.startCon
+
+		self.isAlive(self.hcon)
 
 		print("Waiting for Client Connection")
 		self.ccon, self.addr = self.csoc.accept()
 		self.recvData(self.ccon)
 		thread = threading.Thread(target = ser.acceptClients )
 		thread.start()
+
+		self.isAlive(self.hcon)
+
 		while self.ccon:
+
 			try:
 				msg = self.recvData(self.ccon)
 
@@ -141,6 +147,7 @@ class SerSocket:
 					self.sendData(self.hcon,msg)
 
 				elif msg == "OTP":
+					self.isAlive(self.hcon)
 					sendOTP(self)
 
 				elif msg == "Exit":
@@ -166,6 +173,14 @@ class SerSocket:
 		msg = con.recv(1024)
 		return msg
 
+	def isAlive(self,con):
+		try:
+			con.sendall(bytes("isAlive",'utf-8'))
+			return True
+		except:
+			self.startHardCon()
+			return False
+
 	def closeCon(self):
 		self.ccon.close()
 		print("Socket closed")
@@ -173,7 +188,8 @@ class SerSocket:
 #--------------------------------------------------------------------------------------
 
 ser = SerSocket(5050,5100)
-ser.startCon()
+ser.startHardCon()
+ser.startCliCon()
 thread = threading.Thread(target = ser.acceptClients )
 thread.start()
 

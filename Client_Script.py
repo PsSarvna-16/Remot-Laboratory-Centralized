@@ -58,13 +58,13 @@ def authLogin(frame,root):
 		if(cli.recvData()) == "Ok":
 			cli.sendByte(rsa.encrypt(pwd.encode(),public_l))
 			if(cli.recvData()) == "Ok":
+				frame.bringExperiments(root)
 				messagebox.showinfo(f"Succes", "Logged-In")
 				if frame.check.get():
 					pwd =rsa.encrypt(pwd.encode(),publRem)
 					data = {"id" : user , "pwd" : pwd}
 					with open('data','wb') as f:
 						pickle.dump(data,f)
-				window.bringExperiments(root)
 				return 1
 	messagebox.showwarning(f"Warning", "Credentials Not Matched")
 

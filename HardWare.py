@@ -12,14 +12,14 @@ def sendOTP(msg):
 	except:
 		return False
 
-class Ardino:
+class Ardino:`
 
 	def __init__(self):
 		pass
 
 	def connectArd(self):
 		try:
-			self.board = Arduino('COM4')
+			self.board = Arduino('COM3')
 			self.lcd(" ")
 			self.ser = self.board.get_pin('d:6:s')
 			return True
@@ -27,14 +27,20 @@ class Ardino:
 			return False
                     
 	def lcd(self,text):
-	    if text:
-	        self.board.send_sysex( STRING_DATA, util.str_to_two_byte_iter( text ))
-	    return
+		try:
+		    if text:
+		        self.board.send_sysex( STRING_DATA, util.str_to_two_byte_iter( text ))
+		    return
+		except:
+			return
 
 	def servo(self,val):
-		self.ser.write(int(val))
-		self.lcd(str(val))
-		return
+		try:
+			self.ser.write(int(val))
+			self.lcd(str(val))
+			return
+		except:
+			return
 
 	def disConnectArd(self):
 		try:
@@ -102,7 +108,7 @@ while True:
 		else:
 			hard.sendData("Arduino-NotDisConnected")
 	elif msg[0] == '$':
-		ard.servo(int(msg[1:]))
+		ard.servo(int(msg.split("$")[1]))
 	elif msg == "Exit":
 		hard.closeCon()
 		break
