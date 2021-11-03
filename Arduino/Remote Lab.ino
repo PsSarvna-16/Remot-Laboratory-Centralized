@@ -18,6 +18,7 @@
 // the minimum interval for sampling analog input
 #define MINIMUM_SAMPLING_INTERVAL   1
 
+#ifdef FIRMATA_SERIAL_FEATURE
 SerialFirmata serialFeature;
 #endif
 LiquidCrystal lcd(12,11, 5, 4, 3, 2);
